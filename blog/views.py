@@ -4,7 +4,8 @@ from rest_framework.request import Request
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication 
+from rest_framework.authentication import TokenAuthentication
+
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 
@@ -110,19 +111,15 @@ class DeletePostView(APIView):
 
 
 class LoginUser(APIView):
-    permissions_classes=[IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     def post(self,request: Request) -> Response:
-        print(request.user)
-        user=request.user
-        try:           
-            token = Token.objects.get(user=user)
+        user = request.user
+        token = Token.objects.filter(user=user)
+        if len(token) > 0:
             token.delete()
-            token_new = Token.objects.create(user=user)
-            return Response({"token": token_new.key}, status=status.HTTP_200_OK)
-        except:
-            token_new = Token.objects.create(user=user)            
-            return Response({"token": token_new.key}, status=status.HTTP_200_OK)
-        
+        token = Token.objects.create(user=user)
+        return Response({"token": token.key}, status=status.HTTP_200_OK)
+    
 
 class LogoutUser(APIView):
     authentication_classes=[TokenAuthentication]
