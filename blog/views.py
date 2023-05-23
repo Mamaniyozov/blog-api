@@ -110,14 +110,20 @@ class DeletePostView(APIView):
 
 
 class LoginUser(APIView):
-    parser_classes=[IsAuthenticated]
+    permissions_classes=[IsAuthenticated]
     def post(self,request: Request) -> Response:
+        print(request.user)
         user=request.user
         try:           
-            token = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key}, status=status.HTTP_200_OK)
+            token = Token.objects.get(user=user)
+            token.delete()
+            token_new = Token.objects.create(user=user)
+            return Response({"token": token_new.key}, status=status.HTTP_200_OK)
         except:
-            return Response({'result': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            token_new = Token.objects.create(user=user)            
+            return Response({"token": token_new.key}, status=status.HTTP_200_OK)
+        
+
 class LogoutUser(APIView):
     authentication_classes=[TokenAuthentication]
     def post(self, request:Request)->Response:
