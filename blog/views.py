@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication 
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 
@@ -81,6 +82,7 @@ class CreatePostView(APIView):
 
 
 class UpdatePost(APIView):
+    parser_classes=[IsAuthenticated]
     def put(self,request:Request,id:id)->Response:
         user = request.user
         try:
@@ -94,6 +96,7 @@ class UpdatePost(APIView):
                 return Response({'result':'Not found task'},status=status.HTTP_404_NOT_FOUND)
 
 class DeletePostView(APIView):
+    parser_classes=[IsAuthenticated]
     def post(self,request,id:int):
         try:
             post=Post.objects.get(id=id)
@@ -107,23 +110,12 @@ class DeletePostView(APIView):
 
 
 class LoginUser(APIView):
-    
+    parser_classes=[IsAuthenticated]
     def post(self,request: Request) -> Response:
-        data=request.data
-        username=data.get('username', None)
-        password=data.get('password', None)
-        if username==None or password==None:
-            return Response({'result':'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            user=User.objects.get(username=username)
-            if user.check_password(password):
-                token = Token.objects.filter(user=user)
-                if len(token) > 0:
-                    token.delete()
-                token = Token.objects.create(user=user)
-                return Response({"token": token.key}, status=status.HTTP_200_OK)
-            else:
-                return Response({'result':'Invalid password'}, status=status.HTTP_400_BAD_REQUEST)
+        user=request.user
+        try:           
+            token = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key}, status=status.HTTP_200_OK)
         except:
             return Response({'result': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 class LogoutUser(APIView):
